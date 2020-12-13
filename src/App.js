@@ -10,15 +10,28 @@ import { useEffect, useState } from "react";
 import './App.css';
 import InfoBox from './InfoBox';
 import Map from './Map';
+import Table from './Table';
+import { sortData } from "./util";
 
 function App() {
 
   const[countries, setCountries] = useState([]);
   const[country, setCountry] =  useState(['worldwide']);
+  const[countryInfo, setCountryInfo] = useState({});
+  const[tableData, setTableData] = useState([]);
 
   // https://disease.sh/v3/covid-19/countries
 
   //USEEFFECT = runs a piece of code based on a giver condition
+
+useEffect(() => {
+  fetch("https://disease.sh/v3/covid-19/all")
+  .then(response => response.json())
+  .then(data => {
+    setCountryInfo(data);
+  })
+}, [])
+
 
   useEffect(() => {
     //runs the code inside only once once the component loads (only once)
@@ -33,6 +46,8 @@ function App() {
           }
         ));
 
+        const sortedData = sortData(data);
+        setTableData(sortedData);
         setCountries(countries)
 
       })
@@ -45,7 +60,27 @@ function App() {
     const countryCode = event.target.value;
     
     setCountry(countryCode);
+
+    //if worldwide it gets url : https://disease.sh/v3/covid-19/all
+    //otherwise : https://disease.sh/v3/covid-19/countries/[country_code]
+
+    const url = countryCode == 'worldwide' ? 'https://disease.sh/v3/covid-19/all' : 
+    `https://disease.sh/v3/covid-19/countries/${countryCode}`;
+
+    await fetch(url)
+    .then(response => response.json())
+    .then(data => {
+      setCountry(countryCode);
+
+      //all of the data from the country
+      setCountryInfo(data);
+    });
+
+
+
   };
+
+
 
 
 
@@ -79,11 +114,11 @@ function App() {
       </div>
 
       <div className="app__stats">
-        <InfoBox title="Coronavirus Cases" cases={123} total={2000} />
+        <InfoBox title="Coronavirus Cases" cases={countryInfo.todayCases} total={countryInfo.cases} />
 
-        <InfoBox title="Recovered" cases={1253} total={200}  />
+        <InfoBox title="Recovered" cases={countryInfo.todayRecovered} total={countryInfo.recovered}  />
 
-        <InfoBox title="Deaths" cases={126783} total={300}  />
+        <InfoBox title="Deaths" cases={countryInfo.todayDeaths} total={countryInfo.deaths}  />
         {/* InfoBoxs title="Corona cases" */}
         {/* InfoBoxs title="corona recoveries" */}
         {/* InfoBoxs */}
@@ -104,6 +139,7 @@ function App() {
       <Card className="app__right"> 
       <CardContent>
         <h3>Live Cases by Country</h3>
+        <Table countries={tableData} />
 
         <h3>Worldwide New Cases</h3>
       </CardContent>
